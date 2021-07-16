@@ -27,6 +27,7 @@
     <!-- <rule ref="category/java/bestpractices.xml/JUnit4TestShouldUseAfterAnnotation" /> -->
     <!-- <rule ref="category/java/bestpractices.xml/JUnit4TestShouldUseBeforeAnnotation" /> -->
     <!-- <rule ref="category/java/bestpractices.xml/JUnit4TestShouldUseTestAnnotation" /> -->
+    <!-- <rule ref="category/java/bestpractices.xml/JUnit5TestShouldBePackagePrivate" /> -->
     <!-- <rule ref="category/java/bestpractices.xml/JUnitAssertionsShouldIncludeMessage" /> -->
     <!-- <rule ref="category/java/bestpractices.xml/JUnitTestContainsTooManyAsserts" /> -->
     <!-- <rule ref="category/java/bestpractices.xml/JUnitTestsShouldIncludeAssert" /> -->
@@ -90,7 +91,7 @@
     <!-- <rule ref="category/java/codestyle.xml/CommentDefaultAccessModifier" /> -->
     <!-- <rule ref="category/java/codestyle.xml/ConfusingTernary" /> -->
     <rule ref="category/java/codestyle.xml/ControlStatementBraces"/>
-    <!--<rule ref="category/java/codestyle.xml/DefaultPackage"/>-->
+    <!--<rule ref="category/java/codestyle.xml/DefaultPackage"/> deprecated since 6.35.0 -->
     <!-- <rule ref="category/java/codestyle.xml/EmptyMethodInAbstractClassShouldBeAbstract" /> -->
     <rule ref="category/java/codestyle.xml/ExtendsObject"/>
     <!-- <rule ref="category/java/codestyle.xml/FieldDeclarationsShouldBeAtStartOfClass" /> -->
@@ -126,6 +127,7 @@
     <!-- <rule ref="category/java/design.xml/AvoidThrowingRawExceptionTypes" /> -->
     <!-- <rule ref="category/java/design.xml/AvoidUncheckedExceptionsInSignatures" /> -->
     <rule ref="category/java/design.xml/ClassWithOnlyPrivateConstructorsShouldBeFinal"/>
+    <!-- <rule ref="category/java/design.xml/CognitiveComplexity" /> -->
     <!-- <rule ref="category/java/design.xml/CollapsibleIfStatements"/>-->
     <!-- <rule ref="category/java/design.xml/CouplingBetweenObjects" /> -->
     <!-- <rule ref="category/java/design.xml/CyclomaticComplexity" /> -->
@@ -148,6 +150,7 @@
     <!--         <property name="classes" value="org.sample.SampleInterface,org.sample2.SampleInterface" /> -->
     <!--     </properties> -->
     <!-- </rule> -->
+    <!-- <rule ref="category/java/design.xml/MutableStaticState" /> -->
     <!-- <rule ref="category/java/design.xml/NcssCount" /> -->
     <!-- <rule ref="category/java/design.xml/NPathComplexity" /> -->
     <!-- <rule ref="category/java/design.xml/SignatureDeclareThrowsException" /> -->
@@ -195,7 +198,6 @@
     <!-- <rule ref="category/java/errorprone.xml/AvoidLosingExceptionInformation" /> -->
     <rule ref="category/java/errorprone.xml/AvoidMultipleUnaryOperators"/>
     <rule ref="category/java/errorprone.xml/AvoidUsingOctalValues"/>
-    <rule ref="category/java/errorprone.xml/BadComparison"/>
     <!-- <rule ref="category/java/errorprone.xml/BeanMembersShouldSerialize" /> -->
     <rule ref="category/java/errorprone.xml/BrokenNullCheck"/>
     <!-- <rule ref="category/java/errorprone.xml/CallSuperFirst" /> -->
@@ -205,9 +207,10 @@
     <rule ref="category/java/errorprone.xml/CloneMethodMustBePublic"/>
     <rule ref="category/java/errorprone.xml/CloneMethodMustImplementCloneable"/>
     <rule ref="category/java/errorprone.xml/CloneMethodReturnTypeMustMatchClassName"/>
-    <rule ref="category/java/errorprone.xml/CloneThrowsCloneNotSupportedException"/>
+    <!-- <rule ref="category/java/errorprone.xml/CloneThrowsCloneNotSupportedException"/> deprecated since 6.35.0 -->
     <rule ref="category/java/errorprone.xml/CloseResource"/>
     <rule ref="category/java/errorprone.xml/CompareObjectsWithEquals"/>
+    <rule ref="category/java/errorprone.xml/ComparisonWithNaN"/>
     <!-- <rule ref="category/java/errorprone.xml/ConstructorCallsOverridableMethod" /> -->
     <!-- <rule ref="category/java/errorprone.xml/DataflowAnomalyAnalysis" /> -->
     <!-- <rule ref="category/java/errorprone.xml/DetachedTestCase" /> -->
@@ -224,6 +227,7 @@
     <!-- <rule ref="category/java/errorprone.xml/FinalizeOverloaded" /> -->
     <!-- <rule ref="category/java/errorprone.xml/FinalizeShouldBeProtected" /> -->
     <rule ref="category/java/errorprone.xml/IdempotentOperations"/>
+    <rule ref="category/java/errorprone.xml/ImplicitSwitchFallThrough"/>
     <rule ref="category/java/errorprone.xml/InstantiationToGetClass"/>
     <!-- <rule ref="category/java/errorprone.xml/InvalidLogMessageFormat" /> -->
     <rule ref="category/java/errorprone.xml/JumbledIncrementer"/>
@@ -232,7 +236,6 @@
     <!-- <rule ref="category/java/errorprone.xml/LoggerIsNotStaticFinal" /> -->
     <!-- <rule ref="category/java/errorprone.xml/MethodWithSameNameAsEnclosingClass" /> -->
     <rule ref="category/java/errorprone.xml/MisplacedNullCheck"/>
-    <rule ref="category/java/errorprone.xml/MissingBreakInSwitch"/>
     <!-- <rule ref="category/java/errorprone.xml/MissingSerialVersionUID" /> -->
     <rule ref="category/java/errorprone.xml/MissingStaticMethodInNonInstantiatableClass"/>
     <!-- <rule ref="category/java/errorprone.xml/MoreThanOneLogger" /> -->
@@ -242,7 +245,7 @@
     <rule ref="category/java/errorprone.xml/OverrideBothEqualsAndHashcode"/>
     <rule ref="category/java/errorprone.xml/ProperCloneImplementation"/>
     <rule ref="category/java/errorprone.xml/ProperLogger"/>
-    <rule ref="category/java/errorprone.xml/ReturnEmptyArrayRatherThanNull"/>
+    <rule ref="category/java/errorprone.xml/ReturnEmptyCollectionRatherThanNull"/>
     <rule ref="category/java/errorprone.xml/ReturnFromFinallyBlock"/>
     <!-- <rule ref="category/java/errorprone.xml/SimpleDateFormatNeedsLocale" /> -->
     <rule ref="category/java/errorprone.xml/SingleMethodSingleton"/>

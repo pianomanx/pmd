@@ -34,7 +34,7 @@ public class ApexSuggestUsingNamedCredRule extends AbstractApexRule {
     private final Set<String> listOfAuthorizationVariables = new HashSet<>();
 
     public ApexSuggestUsingNamedCredRule() {
-        super.addRuleChainVisit(ASTUserClass.class);
+        addRuleChainVisit(ASTUserClass.class);
         setProperty(CODECLIMATE_CATEGORIES, "Security");
         setProperty(CODECLIMATE_REMEDIATION_MULTIPLIER, 100);
         setProperty(CODECLIMATE_BLOCK_HIGHLIGHTING, false);
@@ -117,7 +117,7 @@ public class ApexSuggestUsingNamedCredRule extends AbstractApexRule {
     private boolean isAuthorizationLiteral(final ASTLiteralExpression literal) {
         if (literal.isString()) {
             String lit = literal.getImage();
-            if (lit.equalsIgnoreCase(AUTHORIZATION)) {
+            if (AUTHORIZATION.equalsIgnoreCase(lit)) {
                 return true;
             }
         }

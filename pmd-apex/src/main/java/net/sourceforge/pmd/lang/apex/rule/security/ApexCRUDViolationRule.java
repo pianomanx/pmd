@@ -28,11 +28,14 @@ import net.sourceforge.pmd.lang.apex.ast.ASTDmlUpsertStatement;
 import net.sourceforge.pmd.lang.apex.ast.ASTField;
 import net.sourceforge.pmd.lang.apex.ast.ASTFieldDeclaration;
 import net.sourceforge.pmd.lang.apex.ast.ASTFieldDeclarationStatements;
+import net.sourceforge.pmd.lang.apex.ast.ASTForEachStatement;
 import net.sourceforge.pmd.lang.apex.ast.ASTIfElseBlockStatement;
 import net.sourceforge.pmd.lang.apex.ast.ASTMethod;
 import net.sourceforge.pmd.lang.apex.ast.ASTMethodCallExpression;
 import net.sourceforge.pmd.lang.apex.ast.ASTNewKeyValueObjectExpression;
-import net.sourceforge.pmd.lang.apex.ast.ASTParameter;
+import net.sourceforge.pmd.lang.apex.ast.ASTNewListInitExpression;
+import net.sourceforge.pmd.lang.apex.ast.ASTNewListLiteralExpression;
+import net.sourceforge.pmd.lang.apex.ast.ASTNewObjectExpression;
 import net.sourceforge.pmd.lang.apex.ast.ASTProperty;
 import net.sourceforge.pmd.lang.apex.ast.ASTReferenceExpression;
 import net.sourceforge.pmd.lang.apex.ast.ASTReturnStatement;
@@ -56,7 +59,6 @@ import com.google.common.collect.ListMultimap;
  *
  */
 public class ApexCRUDViolationRule extends AbstractApexRule {
-    private static final Pattern VOID_OR_STRING_PATTERN = Pattern.compile("^(string|void)$", Pattern.CASE_INSENSITIVE);
     private static final Pattern SELECT_FROM_PATTERN = Pattern.compile("[\\S|\\s]+?FROM[\\s]+?(\\w+)",
             Pattern.CASE_INSENSITIVE);
 
@@ -115,7 +117,33 @@ public class ApexCRUDViolationRule extends AbstractApexRule {
 
     @Override
     public Object visit(ASTMethodCallExpression node, Object data) {
-        collectCRUDMethodLevelChecks(node);
+        if (Helper.isAnyDatabaseMethodCall(node)) {
+
+            switch (node.getMethodName().toLowerCase(Locale.ROOT)) {
+            case "insert":
+                checkForCRUD(node, data, IS_CREATEABLE);
+                break;
+            case "update":
+                checkForCRUD(node, data, IS_UPDATEABLE);
+                break;
+            case "delete":
+                checkForCRUD(node, data, IS_DELETABLE);
+                break;
+            case "upsert":
+                checkForCRUD(node, data, IS_CREATEABLE);
+                checkForCRUD(node, data, IS_UPDATEABLE);
+                break;
+            case "merge":
+                checkForCRUD(node, data, IS_MERGEABLE);
+                break;
+            default:
+                break;
+            }
+             
+        } else {
+            collectCRUDMethodLevelChecks(node);
+        }
+        
         return data;
     }
 
@@ -203,6 +231,16 @@ public class ApexCRUDViolationRule extends AbstractApexRule {
 
     @Override
     public Object visit(final ASTReturnStatement node, Object data) {
+        final ASTSoqlExpression soql = node.getFirstChildOfType(ASTSoqlExpression.class);
+        if (soql != null) {
+            checkForAccessibility(soql, data);
+        }
+
+        return data;
+    }
+
+    @Override
+    public Object visit(final ASTForEachStatement node, Object data) {
         final ASTSoqlExpression soql = node.getFirstChildOfType(ASTSoqlExpression.class);
         if (soql != null) {
             checkForAccessibility(soql, data);
@@ -344,11 +382,8 @@ public class ApexCRUDViolationRule extends AbstractApexRule {
             return;
         }
 
-        final ASTNewKeyValueObjectExpression newObj = node.getFirstChildOfType(ASTNewKeyValueObjectExpression.class);
-        if (newObj != null) {
-            final String type = Helper.getFQVariableName(newObj);
-            validateCRUDCheckPresent(node, data, crudMethod, type);
-        }
+        checkInlineObject(node, data, crudMethod);
+        checkInlineNonArgsObject(node, data, crudMethod);
 
         final ASTVariableExpression variable = node.getFirstChildOfType(ASTVariableExpression.class);
         if (variable != null) {
@@ -359,6 +394,36 @@ public class ApexCRUDViolationRule extends AbstractApexRule {
 
                 validateCRUDCheckPresent(node, data, crudMethod, typeCheck.toString());
             }
+        }
+
+        final ASTNewListLiteralExpression inlineListLiteral = node.getFirstChildOfType(ASTNewListLiteralExpression.class);
+        if (inlineListLiteral != null) {
+            checkInlineObject(inlineListLiteral, data, crudMethod);
+            checkInlineNonArgsObject(inlineListLiteral, data, crudMethod);
+        }
+
+        final ASTNewListInitExpression inlineListInit = node.getFirstChildOfType(ASTNewListInitExpression.class);
+        if (inlineListInit != null) {
+            checkInlineObject(inlineListInit, data, crudMethod);
+            checkInlineNonArgsObject(inlineListInit, data, crudMethod);
+        }
+    }
+
+    private void checkInlineObject(final ApexNode<?> node, final Object data, final String crudMethod) {
+
+        final ASTNewKeyValueObjectExpression newObj = node.getFirstChildOfType(ASTNewKeyValueObjectExpression.class);
+        if (newObj != null) {
+            final String type = Helper.getFQVariableName(newObj);
+            validateCRUDCheckPresent(node, data, crudMethod, type);
+        }
+    }
+
+    private void checkInlineNonArgsObject(final ApexNode<?> node, final Object data, final String crudMethod) {
+        
+        final ASTNewObjectExpression newEmptyObj = node.getFirstChildOfType(ASTNewObjectExpression.class);
+        if (newEmptyObj != null) {
+            final String type = Helper.getFQVariableName(newEmptyObj);
+            validateCRUDCheckPresent(node, data, crudMethod, type);
         }
     }
 
@@ -445,7 +510,7 @@ public class ApexCRUDViolationRule extends AbstractApexRule {
     private boolean isProperESAPICheckForDML(final String typeToCheck, final String dmlOperation) {
         final boolean hasMapping = checkedTypeToDMLOperationViaESAPI.containsKey(typeToCheck.toString());
         if (hasMapping) {
-            if (dmlOperation.equals(ANY)) {
+            if (ANY.equals(dmlOperation)) {
                 return true;
             }
 
@@ -493,7 +558,7 @@ public class ApexCRUDViolationRule extends AbstractApexRule {
                     properChecksHappened = true;
                     break;
                 }
-                if (crudMethod.equals(ANY)) {
+                if (ANY.equals(crudMethod)) {
                     properChecksHappened = true;
                     break;
                 }
@@ -506,7 +571,6 @@ public class ApexCRUDViolationRule extends AbstractApexRule {
     }
 
     private void checkForAccessibility(final ASTSoqlExpression node, Object data) {
-        final boolean isCount = node.getCanonicalQuery().startsWith("SELECT COUNT()");
         final Set<String> typesFromSOQL = getTypesFromSOQLQuery(node);
 
         final Set<ASTMethodCallExpression> prevCalls = getPreviousMethodCalls(node);
@@ -514,20 +578,17 @@ public class ApexCRUDViolationRule extends AbstractApexRule {
             collectCRUDMethodLevelChecks(prevCall);
         }
 
-        boolean isGetter = false;
         String returnType = null;
 
         final ASTMethod wrappingMethod = node.getFirstParentOfType(ASTMethod.class);
         final ASTUserClass wrappingClass = node.getFirstParentOfType(ASTUserClass.class);
 
-        if (isCount
-                || wrappingClass != null && Helper.isTestMethodOrClass(wrappingClass)
-                || wrappingMethod != null && Helper.isTestMethodOrClass(wrappingMethod)) {
+        if (wrappingClass != null && Helper.isTestMethodOrClass(wrappingClass)
+            || wrappingMethod != null && Helper.isTestMethodOrClass(wrappingMethod)) {
             return;
         }
 
         if (wrappingMethod != null) {
-            isGetter = isMethodAGetter(wrappingMethod);
             returnType = getReturnType(wrappingMethod);
         }
 
@@ -538,13 +599,11 @@ public class ApexCRUDViolationRule extends AbstractApexRule {
             StringBuilder typeCheck = new StringBuilder().append(variableDecl.getDefiningType())
                     .append(":").append(type);
 
-            if (!isGetter) {
-                if (typesFromSOQL.isEmpty()) {
-                    validateCRUDCheckPresent(node, data, ANY, typeCheck.toString());
-                } else {
-                    for (String typeFromSOQL : typesFromSOQL) {
-                        validateCRUDCheckPresent(node, data, ANY, typeFromSOQL);
-                    }
+            if (typesFromSOQL.isEmpty()) {
+                validateCRUDCheckPresent(node, data, ANY, typeCheck.toString());
+            } else {
+                for (String typeFromSOQL : typesFromSOQL) {
+                    validateCRUDCheckPresent(node, data, ANY, typeFromSOQL);
                 }
             }
 
@@ -557,15 +616,12 @@ public class ApexCRUDViolationRule extends AbstractApexRule {
                 String variableWithClass = Helper.getFQVariableName(variable);
                 if (varToTypeMapping.containsKey(variableWithClass)) {
                     String type = varToTypeMapping.get(variableWithClass);
-                    if (!isGetter) {
-                        if (typesFromSOQL.isEmpty()) {
-                            validateCRUDCheckPresent(node, data, ANY, type);
-                        } else {
-                            for (String typeFromSOQL : typesFromSOQL) {
-                                validateCRUDCheckPresent(node, data, ANY, typeFromSOQL);
-                            }
+                    if (typesFromSOQL.isEmpty()) {
+                        validateCRUDCheckPresent(node, data, ANY, type);
+                    } else {
+                        for (String typeFromSOQL : typesFromSOQL) {
+                            validateCRUDCheckPresent(node, data, ANY, typeFromSOQL);
                         }
-
                     }
                 }
             }
@@ -574,13 +630,32 @@ public class ApexCRUDViolationRule extends AbstractApexRule {
 
         final ASTReturnStatement returnStatement = node.getFirstParentOfType(ASTReturnStatement.class);
         if (returnStatement != null) {
-            if (!isGetter) {
-                if (typesFromSOQL.isEmpty()) {
-                    validateCRUDCheckPresent(node, data, ANY, returnType);
-                } else {
-                    for (String typeFromSOQL : typesFromSOQL) {
-                        validateCRUDCheckPresent(node, data, ANY, typeFromSOQL);
-                    }
+            if (typesFromSOQL.isEmpty()) {
+                validateCRUDCheckPresent(node, data, ANY, returnType);
+            } else {
+                for (String typeFromSOQL : typesFromSOQL) {
+                    validateCRUDCheckPresent(node, data, ANY, typeFromSOQL);
+                }
+            }
+        }
+
+        final ASTForEachStatement forEachStatement = node.getFirstParentOfType(ASTForEachStatement.class);
+        if (forEachStatement != null) {
+            if (typesFromSOQL.isEmpty()) {
+
+                final ASTVariableDeclaration variableDeclFor = forEachStatement.getFirstParentOfType(ASTVariableDeclaration.class);
+                if (variableDeclFor != null) {
+                    String type = variableDeclFor.getType();
+                    type = getSimpleType(type);
+                    StringBuilder typeCheck = new StringBuilder().append(variableDeclFor.getDefiningType())
+                            .append(":").append(type);
+
+                    validateCRUDCheckPresent(node, data, ANY, typeCheck.toString());
+                }
+                
+            } else {
+                for (String typeFromSOQL : typesFromSOQL) {
+                    validateCRUDCheckPresent(node, data, ANY, typeFromSOQL);
                 }
             }
         }
@@ -601,14 +676,5 @@ public class ApexCRUDViolationRule extends AbstractApexRule {
     private String getReturnType(final ASTMethod method) {
         return new StringBuilder().append(method.getDefiningType()).append(":")
                 .append(method.getReturnType()).toString();
-    }
-
-    private boolean isMethodAGetter(final ASTMethod method) {
-        final boolean startsWithGet = method.getCanonicalName().startsWith("get");
-        final boolean voidOrString = VOID_OR_STRING_PATTERN
-                .matcher(method.getReturnType()).matches();
-        final boolean noParams = method.findChildrenOfType(ASTParameter.class).isEmpty();
-
-        return startsWithGet && noParams && !voidOrString;
     }
 }

@@ -24,6 +24,7 @@ import net.sourceforge.pmd.lang.java.ast.ASTPrimaryPrefix;
 import net.sourceforge.pmd.lang.java.ast.ASTPrimarySuffix;
 import net.sourceforge.pmd.lang.java.ast.Comment;
 import net.sourceforge.pmd.lang.java.ast.FormalComment;
+import net.sourceforge.pmd.lang.java.ast.JavaNode;
 import net.sourceforge.pmd.lang.java.ast.TypeNode;
 import net.sourceforge.pmd.lang.java.ast.internal.ImportWrapper;
 import net.sourceforge.pmd.lang.java.ast.internal.PrettyPrintingUtil;
@@ -51,6 +52,7 @@ public class UnnecessaryImportRule extends AbstractJavaRule {
      * {@value package.class#field}
      *
      * @throws package.class label
+     * @exception package.class label
      */
     private static final Pattern SEE_PATTERN = Pattern
         .compile("@see\\s+((?:\\p{Alpha}\\w*\\.)*(?:\\p{Alpha}\\w*))?(?:#\\w*(?:\\(([.\\w\\s,\\[\\]]*)\\))?)?");
@@ -62,7 +64,9 @@ public class UnnecessaryImportRule extends AbstractJavaRule {
 
     private static final Pattern THROWS_PATTERN = Pattern.compile("@throws\\s+(\\p{Alpha}\\w*)");
 
-    private static final Pattern[] PATTERNS = { SEE_PATTERN, LINK_PATTERNS, VALUE_PATTERN, THROWS_PATTERN };
+    private static final Pattern EXCEPTION_PATTERN = Pattern.compile("@exception\\s+(\\p{Alpha}\\w*)");
+
+    private static final Pattern[] PATTERNS = { SEE_PATTERN, LINK_PATTERNS, VALUE_PATTERN, THROWS_PATTERN, EXCEPTION_PATTERN };
 
     /**
      * The deprecated rule {@link UnusedImportsRule} extends this class
@@ -161,7 +165,7 @@ public class UnnecessaryImportRule extends AbstractJavaRule {
      * Remove the import wrapper that imports the name referenced by the
      * given node.
      */
-    protected void check(Node referenceNode, RuleContext ruleCtx) {
+    protected void check(JavaNode referenceNode, RuleContext ruleCtx) {
         if (imports.isEmpty()) {
             return;
         }
@@ -181,6 +185,20 @@ public class UnnecessaryImportRule extends AbstractJavaRule {
                     reportWithMessage(i.getNode(), ruleCtx, IMPORT_FROM_JAVA_LANG_MESSAGE);
                 }
                 return;
+            }
+        }
+
+        // check on-demand imports
+        it = imports.iterator();
+        while (it.hasNext()) {
+            ImportWrapper i = it.next();
+            if (!i.isStaticOnDemand() && i.isOnDemand()) {
+                String possibleClassName = i.getFullName() + "." + candName;
+                Class<?> possibleClazz = referenceNode.getRoot().getClassTypeResolver()
+                        .loadClassOrNull(possibleClassName);
+                if (possibleClazz != null) {
+                    it.remove();
+                }
             }
         }
 

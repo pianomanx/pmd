@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import net.sourceforge.pmd.lang.ast.Node;
+import net.sourceforge.pmd.lang.java.ast.ASTAnnotationTypeDeclaration;
 import net.sourceforge.pmd.lang.java.ast.ASTArgumentList;
 import net.sourceforge.pmd.lang.java.ast.ASTArguments;
 import net.sourceforge.pmd.lang.java.ast.ASTBooleanLiteral;
@@ -32,6 +33,7 @@ import net.sourceforge.pmd.lang.java.ast.ASTPrimaryExpression;
 import net.sourceforge.pmd.lang.java.ast.ASTPrimaryPrefix;
 import net.sourceforge.pmd.lang.java.ast.ASTPrimarySuffix;
 import net.sourceforge.pmd.lang.java.ast.ASTPrimitiveType;
+import net.sourceforge.pmd.lang.java.ast.ASTRecordDeclaration;
 import net.sourceforge.pmd.lang.java.ast.ASTReferenceType;
 import net.sourceforge.pmd.lang.java.ast.ASTType;
 import net.sourceforge.pmd.lang.java.ast.AccessNode;
@@ -860,6 +862,12 @@ public final class ConstructorCallsOverridableMethodRule extends AbstractJavaRul
         return data;
     }
 
+    @Override
+    public Object visit(ASTAnnotationTypeDeclaration node, Object data) {
+        // just skip Annotations
+        return data;
+    }
+
     /**
      * This check must be evaluated independently for each class. Inner classes
      * get their own EvalPackage in order to perform independent evaluation.
@@ -877,6 +885,15 @@ public final class ConstructorCallsOverridableMethodRule extends AbstractJavaRul
             removeCurrentEvalPackage();
             return o;
         }
+    }
+
+    @Override
+    public Object visit(ASTRecordDeclaration node, Object data) {
+        // records are final
+        putEvalPackage(NULL_EVAL_PACKAGE);
+        super.visit(node, data);
+        removeCurrentEvalPackage();
+        return null;
     }
 
     /**
