@@ -820,7 +820,7 @@
             <dependency>
                 <groupId>org.pcollections</groupId>
                 <artifactId>pcollections</artifactId>
-                <version>3.2.0</version>
+                <version>4.0.2</version>
             </dependency>
             <dependency>
                 <groupId>net.sourceforge.pmd</groupId>
@@ -855,7 +855,7 @@
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-text</artifactId>
-                <version>1.11.0</version>
+                <version>1.12.0</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
